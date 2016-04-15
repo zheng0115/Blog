@@ -1,6 +1,6 @@
 title: 建立自己的Cocoapods库
 date: 2016-04-15 10:34:31
-tags:
+tags: iOS tools
 ---
 
 # 条件
