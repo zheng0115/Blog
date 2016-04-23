@@ -5,11 +5,11 @@
 # Site
 title: Parallel World
 subtitle:
-description:
+description: 此情可待成追忆，只是当时已惘然
 author: Parallel World
-language:
+language: zh-Hans
 timezone:
-
+avatar: /images/avatar.jpg
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
 url: http://yoursite.com
@@ -80,3 +80,5 @@ deploy:
   type: git
   repository: https://github.com/parallelWorld/parallelWorld.github.io.git
   branch: master
+
+baidu_analytics: dbcabbc97d31eb663f7689fd94c26b45
