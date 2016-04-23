@@ -9,7 +9,7 @@ description: 此情可待成追忆，只是当时已惘然
 author: Parallel World
 language: zh-Hans
 timezone:
-avatar: /images/avatar.jpg
+avatar: /images/avatar.JPG
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
 url: http://yoursite.com
