@@ -72,7 +72,9 @@ feed:
 sitemap:
   path: sitemap.xml
 
-theme: landscape
+theme: next
+
+duoshuo_shortname: paralleworld
 
 deploy:
   type: git
