@@ -1,8 +1,3 @@
-title: 建立自己的Cocoapods库
-date: 2016-04-15 10:34:31
-tags: iOS tools
----
-
 # 条件
 - Cocoapods版本：0.39，不要用beta版本
 
