@@ -7,8 +7,9 @@ block，即代码块、闭包，将同一逻辑的代码放在一个块中，使
 
 ## 内存
 
-## 事例
+## 多线程
 
+# 渔
 ---
 ### 如何简化 block 的书写
 鉴于 block 语法非常难记，也非常难读，可以参考这个网址（[fuckingblocksyntax](http://fuckingblocksyntax.com)）来帮助记忆。看这名字也知道开发者对 block 语法有多么深恶痛绝。
@@ -101,7 +102,7 @@ typedef void (^HWNetworkFetcherCompletionHandler) (NSData *data, NSError *error)
 2. 多层如何调用？
 
 ## 如何使用 block 传递不同个数的参数
-
+---
 # 参考
 - [《Effective Objective-C 2.0》](https://book.douban.com/subject/25829244/)
 - [《iOS 与 OS X 多线程和内存管理》](https://book.douban.com/subject/24720270/)
