@@ -2,10 +2,10 @@
 #define __OBJC2__
 #endif
 struct objc_selector; struct objc_class;
-struct __rw_objc_super {
-	struct objc_object *object;
-	struct objc_object *superClass;
-	__rw_objc_super(struct objc_object *o, struct objc_object *s) : object(o), superClass(s) {}
+struct __rw_objc_super { 
+	struct objc_object *object; 
+	struct objc_object *superClass; 
+	__rw_objc_super(struct objc_object *o, struct objc_object *s) : object(o), superClass(s) {} 
 };
 #ifndef _REWRITER_typedef_Protocol
 typedef struct objc_object Protocol;
@@ -501,15 +501,19 @@ struct __main_block_impl_0 {
   }
 };
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
-printf("Block\n");}
+}
 
 static struct __main_block_desc_0 {
   size_t reserved;
   size_t Block_size;
 } __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
 int main() {
-  void (*blk)() = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA));
-  ((void (*)(__block_impl *))((__block_impl *)blk)->FuncPtr)((__block_impl *)blk);
+
+
+
+
+  typedef void (*blk_t)();
+  blk_t blk = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA));
   return 0;
 }
 static struct IMAGE_INFO { unsigned version; unsigned flag; } _OBJC_IMAGE_INFO = { 0, 2 };

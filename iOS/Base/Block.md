@@ -32,9 +32,59 @@ int main() {
 }
 ```
 
-转换后的代码有515行，所以就不完全贴出，只附上最核心的部分。具体的转换代码在[block.cpp]();
+转换后的代码有515行，所以就不完全贴出，只附上最核心的部分。具体的转换代码在[block.cpp](https://github.com/parallelWorld/Blog/blob/master/iOS/Source/block.cpp);
+
 ```
+// 以下代码在 L62-67
+
+struct __block_impl {
+  void *isa;
+  int Flags;
+  int Reserved;
+  void *FuncPtr;
+};
+
+// 以下代码在 L493-515
+// block 定义
+struct __main_block_impl_0 {
+  struct __block_impl impl;
+  struct __main_block_desc_0* Desc;
+  __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int flags=0) {
+    impl.isa = &_NSConcreteStackBlock; // _NSConcreteStackBlock 相当于 class_t 结构体实例，而结构体拥有的是`isa`指针。也就是说 block 从本质上讲，是 OC 对于闭包的对象实现，是 OC 对象，原因可参见[这篇文章](https://github.com/parallelWorld/Blog/blob/master/iOS/Base/Memory-management.md)。
+    impl.Flags = flags;
+    impl.FuncPtr = fp;
+    Desc = desc;
+  }
+};
+
+// 匿名函数实际上转换成了 C 语言函数，命名方式是该 block 定义时所处的函数名和该 block 出现的顺序共同构成。如果是在全局定义 block ，则命名是定义时的变量名和该 block 出现的顺序共同构成。比如:`__blk_block_func_0`。
+// 这里的`__cself`是一个结构体指针，相当于 C++ 中的`this`或 Objective-C 中的 `self`。
+static void __main_block_func_0(struct __main_block_impl_0 *__cself) {
+	printf("Block\n");
+}
+
+static struct __main_block_desc_0 {
+  size_t reserved;
+  size_t Block_size;
+} __main_block_desc_0_DATA = { 0, sizeof(struct __main_block_impl_0)};
+
+int main() {
+  // 对应的源代码：`void (^blk)() = ^{printf("Block\n");};`
+  // 简化成：`struct __main_block_impl_0 *blk = &__main_block_impl_0(__main_block_func_0, &__main_block_desc_0_DATA);`
+  // 调用`__main_block_impl_0`构造函数生成结构体，并把地址赋给指针 blk
+  void (*blk)() = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA));
+
+  // 对应的源代码：`blk();`
+  // 简化成：`(*blk->impl.FuncPtr)(blk);`
+  // 取出 blk 中 impl 成员变量，调用 impl 的 函数指针 FuncPtr，参数是 blk
+  ((void (*)(__block_impl *))((__block_impl *)blk)->FuncPtr)((__block_impl *)blk);
+  return 0;
+}
 ```
+
+
+
+
 
 ## 内存
 
