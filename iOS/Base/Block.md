@@ -88,6 +88,14 @@ int main() {
 
 ## 内存
 
+### 5道 block 内存管理的测试题
+
+具体问题不在这里贴出，请查看[Objective-C Blocks Quiz](http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/)
+
+如果这些题都能答对，而且明白原因，那么 block 在 ARC 和 MRC 下的 copy 和 release 你已经明白了所有。
+
+直接上结论：ARC下，block 总是能在合适的时机，从 stack 上 copy 到 heap 上。MRC下，需要自己手动 copy 和 autorelease，即总是需要这样写`[[block copy] autorelease]`。ARC 下，编译器总是帮助你解决内存管理问题，除了循环引用；MRC则需要自己手动管理。
+
 ## 多线程
 
 # 渔
@@ -178,12 +186,17 @@ typedef void (^HWNetworkFetcherCompletionHandler) (NSData *data, NSError *error)
 综上，解除循环引用的关键在于分析清楚 block 和 block 中对象的引用关系，然后在合适的时机将其中一个置为`nil`。
 
 
-## @strongify & @weakify
+### @strongify & @weakify
 1. 如何使用
+
 2. 多层如何调用？
 
+
 ## 如何使用 block 传递不同个数的参数
+
 ---
 # 参考
 - [《Effective Objective-C 2.0》](https://book.douban.com/subject/25829244/)
 - [《iOS 与 OS X 多线程和内存管理》](https://book.douban.com/subject/24720270/)
+- [Objective-C Blocks Quiz](http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/)
+- [Blocks Programming Topics](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Blocks/Articles/00_Introduction.html#//apple_ref/doc/uid/TP40007502-CH1-SW1)
