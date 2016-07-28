@@ -1,10 +1,11 @@
 #include <stdio.h>
-int main() {
-  // void (^blk)() = ^{printf("Block\n");};
-  // blk();
-  // return 0;
 
-  typedef void (^blk_t)();
-  blk_t blk = ^{};
+int main() {
+  __block int a = 0;
+  void (^blk)() = ^{
+    a = 1;
+    printf("Block\n");
+  };
+  blk();
   return 0;
 }

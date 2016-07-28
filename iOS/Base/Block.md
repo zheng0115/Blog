@@ -1,7 +1,48 @@
->
+## 本质
 
-## 介绍
-block，即代码块、闭包，将同一逻辑的代码放在一个块中，使代码更紧凑，开发者可将代码像**对象**一样传递，令其在不同上下文下运行。这项技术并非 Objective-C 一门语言独有，其他编程语言也有类似的实现，叫法可能不同而已。10.4版及以后的 Mac OS X 系统与4.0版及以后的 iOS 系统中才能正常执行 block 代码。
+block，即代码块、闭包。从形式上看，是带有自动变量值的匿名函数，从本质上看，是 Objective-C 对象。
+
+说 block 是带有自动变量值的匿名函数，是因为在 block 的函数体内，可以使用函数体之前声明的自动变量，也不用对该函数命名。
+
+说 block 是对象，是因为 block 源代码转换的结构体中一个成员变量是`void *isa`。拥有`isa`指针，意味着该对象是一个 Objective-C 对象。block 对象类型有三种，`_NSConcreteStackBlock`、`_NSConcreteGlobalBlock`和`_NSConcreteMallocBlock`，表明的是该 block 的存储域。如字面意思，存储域分别对应的是栈、数据区域（.data区）和堆。也就是说，不同的存储域对应着 block 不同的生命周期。
+
+## 截获自动变量
+
+### case1 block 中使用但不赋值自动变量
+block 会将使用的自动变量作为一个参数，通过值传递的方式传给转化后的『匿名函数』（注意 block 的匿名函数会转化成 C 函数，是有名字的）。该自动变量不会发生任何变化。
+
+### case2 block 中使用并赋值静态变量、全局变量和静态全局变量
+block 会将上述三种类型的变量的指针传递给匿名函数，达到使用并修改的目的。变量本身不会发生任何变化。
+
+### case3 block 中赋值自动变量
+如果直接赋值，编译器会报错。原因是 block 里的自动变量并不是截获的自动变量，是作为参数值传递的结果。假设允许直接赋值，也不会改变截获的自动变量的值，**跟实际代码的逻辑不符**，所以编译器直接报错。要想在 block 内改变自动变量，要么将该自动变量改成 case2 的任意一种类型，要么在变量声明处加上`__block`关键字。
+
+加上`__block`关键字，自动变量本身发生了变化，被编译器扩展成一个结构体。block 函数传递的参数变成该结构体的指针，自动变量变成该结构体的一个成员变量。结构体结构如下：
+
+```
+struct __Block_byref_intValue_0
+{
+    void *__isa;                            // 对象指针
+    __Block_byref_intValue_0 *__forwarding; // 指向自己的指针
+    int __flags;                            // 标志位变量
+    int __size;                             // 结构体大小
+    int intValue;                           // 自动变量
+};
+```
+
+赋值自动变量变成对转化后的结构体的成员变量赋值。赋值代码是`(val->__forwarding->val) = 1;`。这里的赋值不符合常理，中间多了一步，通过结构体的`__forwarding`指针调用`val`。
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## 基础
@@ -192,11 +233,65 @@ typedef void (^HWNetworkFetcherCompletionHandler) (NSData *data, NSError *error)
 2. 多层如何调用？
 
 
-## 如何使用 block 传递不同个数的参数
 
+Foundation 集合遍历
+GCD block
+RAC
+Masonry
+
+
+
+## 如何使用 block 传递不同个数的参数
+一个block像下面一样声明：
+```
+void(^block1)(void);
+void(^block2)(int a);
+void(^block3)(NSNumber *a, NSString *b);
+```
+如果block的参数列表为空的话，相当于可变参数（不是void）
+
+```
+void(^block)(); // 返回值为void，参数可变的block
+block = block1; // 正常
+block = block2; // 正常
+block = block3; // 正常
+block(@1, @"string");  // 对应上面的block3
+block(@1); // block3的第一个参数为@1，第二个为nil
+```
+这样，block的主调和回调之间可以通过约定来决定block回传回来的参数是什么，有几个。如一个对网络层的调用：
+
+```
+- (void)requestDataWithApi:(NSInteger)api block:(void(^)())block {
+    if (api == 0) {
+        block(1, 2);
+    }
+    else if (api == 1) {
+        block(@"1", @2, @[@"3", @"4", @"5"]);
+    }
+}
+```
+主调者知道自己请求的是哪个Api，那么根据约定，他就知道block里面应该接受哪几个参数：
+
+```
+[server requestDataWithApi:0 block:^(NSInteger a, NSInteger b){
+    // ...
+}];
+[server requestDataWithApi:1 block:^(NSString *s, NSNumber *n, NSArray *a){
+    // ...
+}];
+```
+
+这个特性在Reactive Cocoa的-combineLatest:reduce:等类似方法中已经使用的相当好了。
+```
++ (RACSignal *)combineLatest:(id<NSFastEnumeration>)signals reduce:(id (^)())reduceBlock;
+```
 ---
 # 参考
 - [《Effective Objective-C 2.0》](https://book.douban.com/subject/25829244/)
 - [《iOS 与 OS X 多线程和内存管理》](https://book.douban.com/subject/24720270/)
 - [Objective-C Blocks Quiz](http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/)
 - [Blocks Programming Topics](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Blocks/Articles/00_Introduction.html#//apple_ref/doc/uid/TP40007502-CH1-SW1)
+- [objc非主流代码技巧](http://blog.sunnyxx.com/2014/08/02/objc-weird-code/)
+- [block没那么难（一）：block的实现](https://www.zybuluo.com/MicroCai/note/51116)
+- [block没那么难（二）：block和变量的内存管理](https://www.zybuluo.com/MicroCai/note/57603)
+- [block没那么难（三）：block和对象的内存管理](https://www.zybuluo.com/MicroCai/note/58470)
