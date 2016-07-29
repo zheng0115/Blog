@@ -4,7 +4,9 @@ block，即代码块、闭包。从形式上看，是带有自动变量值的匿
 
 说 block 是带有自动变量值的匿名函数，是因为在 block 的函数体内，可以使用函数体之前声明的自动变量，也不用对该函数命名。
 
-说 block 是对象，是因为 block 源代码转换的结构体中一个成员变量是`void *isa`。拥有`isa`指针，意味着该对象是一个 Objective-C 对象。block 对象类型有三种，`_NSConcreteStackBlock`、`_NSConcreteGlobalBlock`和`_NSConcreteMallocBlock`，表明的是该 block 的存储域。如字面意思，存储域分别对应的是栈、数据区域（.data区）和堆。也就是说，不同的存储域对应着 block 不同的生命周期。
+说 block 是对象，是因为 block 源代码转换的结构体中一个成员变量是`void *isa`。拥有`isa`指针，意味着该对象是一个 Objective-C 对象。block 对象类型有三种，`_NSConcreteStackBlock`、`_NSConcreteGlobalBlock`和`_NSConcreteMallocBlock`，表征的是该 block 的存储域。如字面意思，存储域分别对应的是栈、数据区域（.data区）和堆。也就是说，不同的存储域对应着 block 不同的生命周期。
+
+
 
 ## 截获自动变量
 
@@ -30,7 +32,63 @@ struct __Block_byref_intValue_0
 };
 ```
 
-赋值自动变量变成对转化后的结构体的成员变量赋值。赋值代码是`(val->__forwarding->val) = 1;`。这里的赋值不符合常理，中间多了一步，通过结构体的`__forwarding`指针调用`val`。
+赋值自动变量变成对转化后的结构体的成员变量赋值。赋值代码是`(val->__forwarding->val) = 1;`。这里的赋值不符合常理，中间多了一步，通过结构体的`__forwarding`指针调用`val`。这样调用的原因会在下面的 block 内存管理中详述。
+
+
+
+## 内存管理
+
+### `_NSConcreteGlobalBlock`
+
+当 block 函数体内不使用自动变量或者 block 定义在全局变量处时，block 类型是`_NSConcreteGlobalBlock`。
+
+### `_NSConcreteStackBlock`
+
+当 block 定义在栈上，且使用自动变量，block 类型是`_NSConcreteStackBlock`。
+
+### `_NSConcreteMallocBlock`
+
+当 block 复制到堆上时，block 类型是`_NSConcreteMallocBlock`。
+
+### 内存管理规则
+
+鉴于 block 是 Objective-C 对象，因此 block 的内存管理也遵循引用计数的规则，应该有对应的`copy`和`release`方法。通过源码分析，block 的结构体中确实存在`copy`和`dispose`函数指针。对于 block 本身而言，有如下规则：
+
+| block 类型 | 原 block 存储域 | 复制效果 |
+|:-:|:-:|:-:|
+| _NSConcreteGlobalBlock | .data | 什么也不做 |
+| _NSConcreteStackBlock | 栈 | 从栈复制到堆 |
+| _NSConcreteMallocBlock | 堆 | 引用计数增加 |
+
+对于`__block`变量来说，此时 block 类型只能是`_NSConcreteStackBlock`和`_NSConcreteMallocBlock`。当 block 从栈复制到堆时，`__block`变量也从栈复制到堆，被 block 持有，其`isa`指针值变为`_NSConcreteMallocBlock`，`__forwarding`指针指向自己。注意，此时栈上的`__block`变量也会发生变化，其`__forwarding`指针值变成堆上的`__block`变量地址。当 block 从堆复制到堆，`__block`变量什么也不做。下面解释下为什么栈上的`__block`变量的`__forwarding`指针会指向堆上的`__block`变量。
+
+假设有如下代码：
+
+```
+__block int val = 0;
+void (^blk)(void) = [^{++val;} copy];
+++val;
+blk();
+NSLog(@"%d", val);
+```
+
+最后输出的结果是2。首先观察代码逻辑，我们对变量做了`__block`修饰，就是希望无论在 block 中还是在后面的代码段中，都能对 val 这个变量进行修改，希望修改的是同一个变量。block 复制后，假设栈上的 block 的`__forwarding`指针并没有变。那么我们在修改 block 中的 val时，修改的是堆上的结构体中的 val 值。修改栈中的 val 时，修改的是栈的结构体的 val 值，跟我们的预期并不相同。所以`__forwarding`指针可以保证，`__block`变量无论配置在栈上还是堆上，都能正确访问`__block`变量。
+
+#### ARC情况下编译器如何管理 block 内存
+
+ARC情况下，普通的 Objective-C 对象并不需要手动管理引用计数。对于 block 而言，编译器也会通过适当地判断，将栈上的 block copy 到堆上。
+
+编译器不会自动 copy 的情况：
+
+> - block 作为方法或函数的参数传递时，但是如果是在方法或函数中已经适当地复制了传递过来的参数，那么就不必在调用该方法或函数前手动复制了。例如，Cocoa 框架中方法名含有 usingBlock 等，还有 GCD 的 API。
+
+编译器自动 copy 的情况：
+
+> - block 作为函数返回值返回时
+> - 调用 block 的 copy 方法
+> - block 赋值给 `__strong`修饰的 id 类型的变量或者 block 类型成员变量
+> - 在方法名中含有 usingBlock 的 cocoa 框架方法或 GCD 的 API 中传递 block
+
 
 
 
