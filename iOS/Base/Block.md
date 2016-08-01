@@ -227,7 +227,7 @@ typedef void (^HWNetworkFetcherCompletionHandler) (NSData *data, NSError *error)
 
 
 ## `@strongify` & `@weakify`
-1. 如何使用
+
 用过 RAC 框架，对这两个宏应该比较熟悉。这两个宏作用分别是对`self`强引用和弱引用。示例代码如下：
 
 ```objc
@@ -242,14 +242,13 @@ typedef void (^HWNetworkFetcherCompletionHandler) (NSData *data, NSError *error)
 
 block 函数体内使用强引用的原因前面已经讲述，再说一遍，就是避免 block 函数体使用该对象时，该对象已经释放，需要使用强引用保持对象的存活。
 
-2. 多层使用时如何调用？
 上述说明，在有一个 block 的时候，两个宏是成对出现的。但我们在用 RAC 或者 使用 LeanCloud SDK 的时候，往往会出现多层调用 block 的情况，此时依然是成对使用这两个宏。原因参见[iOS Proper Use of @weakify(self) and @strongify(self)](http://stackoverflow.com/questions/28305356/ios-proper-use-of-weakifyself-and-strongifyself)。
 
-## 误认为是循环引用的情况
+## 不会引起循环引用的情况
 
 - Foundation 框架中的集合遍历方法`- (void)enumerateObjectsUsingBlock:`
 - GCD block
-- Masonry
+- [Masonry](https://github.com/SnapKit/Masonry)
 - ...
 
 
